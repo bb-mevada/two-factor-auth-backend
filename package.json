@@ -1,0 +1,22 @@
+{
+    "name": "two-factor-auth-backend",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "dev": "tsx --env-file=.env --watch src/index.ts",
+        "build": "rm -rf dist && tsc",
+        "start": "node --env-file=.env dist/index.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "devDependencies": {
+        "@types/node": "^24.10.1",
+        "prettier": "^3.6.2",
+        "tsx": "^4.20.6",
+        "typescript": "^5.9.3"
+    }
+}
+
