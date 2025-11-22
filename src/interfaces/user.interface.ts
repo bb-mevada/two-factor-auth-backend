@@ -3,7 +3,7 @@ import { IUserSchema } from '../types/user.type'
 import { RequestHandler } from 'express'
 import { TServiceSuccess } from '../types/service.type'
 import z from 'zod'
-import { loginUserValidator, registerUserValidator } from '../validators/user.validator'
+import { loginUserValidator, registerUserValidator, verify2FAValidator } from '../validators/user.validator'
 
 export interface IUserRequestData {
     register: {
@@ -15,12 +15,17 @@ export interface IUserRequestData {
     activate2FA: {
         user: IUserSchema
     }
+    verify2FA: {
+        user: IUserSchema
+        body: z.infer<typeof verify2FAValidator>
+    }
 }
 
 export interface IUserController {
     register: RequestHandler
     login: RequestHandler
     activate2FA: RequestHandler
+    verify2FA: RequestHandler
 }
 
 export interface IUserService {
@@ -35,6 +40,15 @@ export interface IUserService {
         TServiceSuccess<{
             qrDataUrl: string
             recoveryCodes: string[]
+        }>
+    >
+    verify2FA: (
+        user: IUserRequestData['verify2FA']['user'],
+        payload: IUserRequestData['verify2FA']['body']
+    ) => Promise<
+        TServiceSuccess<{
+            userId: string
+            accessToken: string
         }>
     >
 }

@@ -2,13 +2,14 @@ import OTPAuth from 'otpauth'
 import { customAlphabet } from 'nanoid'
 import { hashValue } from './encryption.helper'
 
-export const generateTOTP = (email: string) => {
+export const generateTOTP = (email: string, base32?: string) => {
     const totp = new OTPAuth.TOTP({
         issuer: 'Two-FA',
         label: email,
         algorithm: 'SHA256',
         digits: 6,
-        period: 30
+        period: 30,
+        ...(base32 ? { secret: OTPAuth.Secret.fromBase32(base32) } : {})
     })
 
     return totp

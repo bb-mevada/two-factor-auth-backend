@@ -1,6 +1,6 @@
 import envConfig from '../configs/env.config'
 import { generateRecoveryCodes, generateTOTP } from '../helpers/2fa.helper'
-import { generateMinutesSeconds } from '../helpers/date-time.helper'
+import { generateDaysSeconds, generateMinutesSeconds } from '../helpers/date-time.helper'
 import { compareValue, hashValue } from '../helpers/encryption.helper'
 import { ApplicationException } from '../helpers/error.helper'
 import { singJWT } from '../helpers/jwt.helper'
@@ -8,6 +8,7 @@ import { createQRCodeDataURL } from '../helpers/qr.helper'
 import { serviceSuccess } from '../helpers/service.helper'
 import { IUserRepository, IUserRequestData, IUserService } from '../interfaces/user.interface'
 import { TJwtPayload } from '../types/jwt.type'
+import { TServiceSuccess } from '../types/service.type'
 
 export default class UserService implements IUserService {
     constructor(private userRepository: IUserRepository) {
@@ -119,6 +120,50 @@ export default class UserService implements IUserService {
         return serviceSuccess('Activation loaded', {
             qrDataUrl,
             recoveryCodes: recoveryCodes.plainText
+        })
+    }
+
+    verify2FA = async (user: IUserRequestData['verify2FA']['user'], payload: IUserRequestData['verify2FA']['body']) => {
+        console.log(user.twoFactorAuth)
+        const totp = generateTOTP(user.email, user.twoFactorAuth.secret!)
+        const delta = totp.validate({
+            token: payload.totp,
+            window: 1
+        })
+
+        if (delta !== 0) {
+            throw new ApplicationException(400, 'Verification failed')
+        }
+
+        const is2FAActivated = user.twoFactorAuth.activated
+        if (!is2FAActivated) {
+            const updatedUser = await this.userRepository.updateOne(
+                {
+                    _id: user._id
+                },
+                {
+                    $set: {
+                        'twoFactorAuth.activated': true
+                    }
+                }
+            )
+
+            if (updatedUser.modifiedCount === 0) {
+                throw new ApplicationException(400, 'Verification failed')
+            }
+        }
+
+        // Token generation
+        const tokenPayload: TJwtPayload = {
+            userId: String(user._id),
+            stage: '2fa'
+        }
+
+        const accessToken = singJWT(tokenPayload, envConfig.ACCESS_TOKEN_SECRET, generateDaysSeconds(1))
+
+        return serviceSuccess('Logged in', {
+            userId: String(user._id),
+            accessToken
         })
     }
 }

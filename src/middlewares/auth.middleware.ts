@@ -7,7 +7,7 @@ import { TJwtPayload } from '../types/jwt.type'
 import { ApplicationException } from '../helpers/error.helper'
 
 type TAuthMiddlewareParams = {
-    stage: ('password' | 'auth-code')[]
+    stage: ('password' | '2fa')[]
     repositories: {
         userRepository: IUserRepository
     }
@@ -29,7 +29,7 @@ const authMiddleware =
             }
 
             if (isAuthenticated) {
-                const user = await params.repositories.userRepository.findOne({ _id: jwtPayload.userId }, '+twoFactorAuth')
+                const user = await params.repositories.userRepository.findOne({ _id: jwtPayload.userId }, '+twoFactorAuth.secret')
                 if (user) {
                     req.user = user
                     res.setHeader('X-Auth-Stage', jwtPayload.stage)
