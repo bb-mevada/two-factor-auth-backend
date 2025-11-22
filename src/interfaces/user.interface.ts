@@ -12,11 +12,15 @@ export interface IUserRequestData {
     login: {
         body: z.infer<typeof loginUserValidator>
     }
+    activate2FA: {
+        user: IUserSchema
+    }
 }
 
 export interface IUserController {
     register: RequestHandler
     login: RequestHandler
+    activate2FA: RequestHandler
 }
 
 export interface IUserService {
@@ -25,6 +29,12 @@ export interface IUserService {
         TServiceSuccess<{
             userId: string
             accessToken: string
+        }>
+    >
+    activate2FA: (user: IUserRequestData['activate2FA']['user']) => Promise<
+        TServiceSuccess<{
+            qrDataUrl: string
+            recoveryCodes: string[]
         }>
     >
 }

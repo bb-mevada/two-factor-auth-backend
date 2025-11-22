@@ -1,12 +1,13 @@
 import envConfig from '../configs/env.config'
+import { generateRecoveryCodes, generateTOTP } from '../helpers/2fa.helper'
 import { generateMinutesSeconds } from '../helpers/date-time.helper'
 import { compareValue, hashValue } from '../helpers/encryption.helper'
 import { ApplicationException } from '../helpers/error.helper'
 import { singJWT } from '../helpers/jwt.helper'
+import { createQRCodeDataURL } from '../helpers/qr.helper'
 import { serviceSuccess } from '../helpers/service.helper'
 import { IUserRepository, IUserRequestData, IUserService } from '../interfaces/user.interface'
 import { TJwtPayload } from '../types/jwt.type'
-import { TServiceSuccess } from '../types/service.type'
 
 export default class UserService implements IUserService {
     constructor(private userRepository: IUserRepository) {
@@ -75,6 +76,49 @@ export default class UserService implements IUserService {
         return serviceSuccess('Logged in', {
             userId: String(user._id),
             accessToken
+        })
+    }
+
+    activate2FA = async (user: IUserRequestData['activate2FA']['user']) => {
+        const is2FAActivated = user.twoFactorAuth.activated
+        if (is2FAActivated) {
+            throw new ApplicationException(400, 'Already activated')
+        }
+
+        // TOTP generation
+        const totp = generateTOTP(user.email)
+        const otpAuth = totp.toString()
+        const qrDataUrl = await createQRCodeDataURL(otpAuth)
+
+        // Properties
+        const secret = totp.secret.base32
+        const recoveryCodes = await generateRecoveryCodes(10)
+
+        // Update user
+        const updatedUser = await this.userRepository.updateOne(
+            {
+                _id: user._id
+            },
+            {
+                $set: {
+                    'twoFactorAuth.secret': secret,
+                    'twoFactorAuth.recoveryCodes': recoveryCodes.hashed.map((code) => {
+                        return {
+                            code,
+                            used: false
+                        }
+                    })
+                }
+            }
+        )
+
+        if (updatedUser.modifiedCount === 0) {
+            throw new ApplicationException(400, 'Activation failed')
+        }
+
+        return serviceSuccess('Activation loaded', {
+            qrDataUrl,
+            recoveryCodes: recoveryCodes.plainText
         })
     }
 }

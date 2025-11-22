@@ -14,18 +14,25 @@
     "type": "commonjs",
     "devDependencies": {
         "@types/bcrypt": "^6.0.0",
+        "@types/cookie-parser": "^1.4.10",
         "@types/express": "^5.0.5",
         "@types/jsonwebtoken": "^9.0.10",
         "@types/node": "^24.10.1",
+        "@types/qrcode": "^1.5.6",
         "prettier": "^3.6.2",
         "tsx": "^4.20.6",
         "typescript": "^5.9.3"
     },
     "dependencies": {
         "bcrypt": "^6.0.0",
+        "cookie-parser": "^1.4.7",
         "express": "^5.1.0",
+        "helmet": "^8.1.0",
         "jsonwebtoken": "^9.0.2",
         "mongoose": "^8.20.0",
+        "nanoid": "^5.1.6",
+        "otpauth": "^9.4.1",
+        "qrcode": "^1.5.4",
         "zod": "^4.1.12"
     }
 }

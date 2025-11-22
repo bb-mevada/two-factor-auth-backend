@@ -2,6 +2,7 @@ import { RequestHandler } from 'express'
 import { IUserController, IUserRequestData, IUserService } from '../interfaces/user.interface'
 import { loginUserValidator, registerUserValidator } from '../validators/user.validator'
 import { getCookieOptions } from '../helpers/cookie.helper'
+import { IAuthenticatedRequest } from '../types/auth.type'
 
 export default class UserController implements IUserController {
     constructor(private userService: IUserService) {
@@ -37,6 +38,13 @@ export default class UserController implements IUserController {
         // Set Cookie
         const cookieOptions = getCookieOptions({ purpose: 'auth', type: 'minute', value: 5 })
         res.cookie('accessToken', response.data.accessToken, cookieOptions)
+        res.status(200).json(response)
+    }
+
+    activate2FA: RequestHandler = async (req, res, next) => {
+        const { user } = req as IAuthenticatedRequest
+
+        const response = await this.userService.activate2FA(user)
         res.status(200).json(response)
     }
 }
