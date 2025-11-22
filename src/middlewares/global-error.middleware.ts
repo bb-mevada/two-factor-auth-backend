@@ -1,8 +1,9 @@
 import { ErrorRequestHandler } from 'express'
 import envConfig from '../configs/env.config'
 import { ApplicationException } from '../helpers/error.helper'
+import { ZodError } from 'zod'
 
-type TGlobalError = Error | ApplicationException
+type TGlobalError = Error | ApplicationException | ZodError
 
 const globalErrorMiddleware: ErrorRequestHandler = (err: TGlobalError, _req, res, _next) => {
     let statusCode = 500
@@ -10,6 +11,12 @@ const globalErrorMiddleware: ErrorRequestHandler = (err: TGlobalError, _req, res
 
     if (err instanceof ApplicationException) {
         statusCode = err.statusCode
+    } else if (err instanceof ZodError) {
+        if (err.issues.length > 0) {
+            const { path, message } = err.issues[0]
+            statusCode = 422
+            errorMessage = `${path.length > 0 ? path + ' -> ' : ''}${message}`
+        }
     }
 
     const response = {
