@@ -34,4 +34,12 @@ userRouter.route('/verify-2fa').post(
     userController.verify2FA
 )
 
+userRouter.route('/me').get(
+    authMiddleware({
+        stage: ['password', '2fa'],
+        repositories: { userRepository }
+    }),
+    userController.me
+)
+
 export default userRouter

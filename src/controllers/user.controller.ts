@@ -3,6 +3,8 @@ import { IUserController, IUserRequestData, IUserService } from '../interfaces/u
 import { loginUserValidator, registerUserValidator, verify2FAValidator } from '../validators/user.validator'
 import { getCookieOptions } from '../helpers/cookie.helper'
 import { IAuthenticatedRequest } from '../types/auth.type'
+import { ParamsDictionary } from 'express-serve-static-core'
+import { ParsedQs } from 'qs'
 
 export default class UserController implements IUserController {
     constructor(private userService: IUserService) {
@@ -64,6 +66,12 @@ export default class UserController implements IUserController {
         // Set Cookie
         const cookieOptions = getCookieOptions({ purpose: 'auth', type: 'day', value: 1 })
         res.cookie('accessToken', response.data.accessToken, cookieOptions)
+        res.status(200).json(response)
+    }
+
+    me: RequestHandler = (req, res, next) => {
+        const { user } = req as IAuthenticatedRequest
+        const response = this.userService.me(user)
         res.status(200).json(response)
     }
 }

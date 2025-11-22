@@ -166,4 +166,16 @@ export default class UserService implements IUserService {
             accessToken
         })
     }
+
+    me = (user: IUserRequestData['me']['user']) => {
+        const sanitizedUser = {
+            userId: String(user._id),
+            name: user.name,
+            email: user.email,
+            twoFactorAuth: { activated: user.twoFactorAuth.activated },
+            createdAt: user.createdAt
+        }
+
+        return serviceSuccess('User fetched', sanitizedUser)
+    }
 }
