@@ -42,4 +42,12 @@ userRouter.route('/me').get(
     userController.me
 )
 
+userRouter.route('/logout').put(
+    authMiddleware({
+        stage: ['password', '2fa'],
+        repositories: { userRepository }
+    }),
+    userController.logout
+)
+
 export default userRouter

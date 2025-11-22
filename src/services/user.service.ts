@@ -178,4 +178,10 @@ export default class UserService implements IUserService {
 
         return serviceSuccess('User fetched', sanitizedUser)
     }
+
+    logout = (user: IUserRequestData['logout']['user']) => {
+        return serviceSuccess('Logout success', {
+            userId: String(user._id)
+        })
+    }
 }
