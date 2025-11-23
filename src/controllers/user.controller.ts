@@ -107,4 +107,15 @@ export default class UserController implements IUserController {
 
         res.status(200).json(response)
     }
+
+    reset2FA: RequestHandler = async (req, res, next) => {
+        const { user } = req as IAuthenticatedRequest
+
+        const response = await this.userService.reset2FA(user)
+
+        // Set Cookie
+        const cookieOptions = getCookieOptions({ purpose: 'auth', type: 'minute', value: 5 })
+        res.cookie('accessToken', response.data.accessToken, cookieOptions)
+        res.status(200).json(response)
+    }
 }

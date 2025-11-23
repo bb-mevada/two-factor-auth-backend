@@ -29,6 +29,9 @@ export interface IUserRequestData {
     logout: {
         user: IUserSchema
     }
+    reset2FA: {
+        user: IUserSchema
+    }
 }
 
 export interface IUserController {
@@ -39,6 +42,7 @@ export interface IUserController {
     verify2FA: RequestHandler
     me: RequestHandler
     logout: RequestHandler
+    reset2FA: RequestHandler
 }
 
 export interface IUserService {
@@ -83,6 +87,7 @@ export interface IUserService {
         createdAt?: Date
     }>
     logout: (user: IUserRequestData['logout']['user']) => TServiceSuccess<{ userId: string }>
+    reset2FA: (user: IUserRequestData['reset2FA']['user']) => Promise<TServiceSuccess<{ userId: string; accessToken: string }>>
 }
 
 export interface IUserRepository {

@@ -187,7 +187,6 @@ export default class UserService implements IUserService {
     }
 
     verify2FA = async (user: IUserRequestData['verify2FA']['user'], payload: IUserRequestData['verify2FA']['body']) => {
-        console.log(user.twoFactorAuth)
         const totp = generateTOTP(user.email, user.twoFactorAuth.secret!)
         const delta = totp.validate({
             token: payload.totp,
@@ -245,6 +244,43 @@ export default class UserService implements IUserService {
     logout = (user: IUserRequestData['logout']['user']) => {
         return serviceSuccess('Logout success', {
             userId: String(user._id)
+        })
+    }
+
+    reset2FA = async (user: IUserRequestData['reset2FA']['user']) => {
+        const is2FAActivated = user.twoFactorAuth.activated
+        if (!is2FAActivated) {
+            throw new ApplicationException(400, 'Cannot reset 2FA')
+        }
+
+        const updatedUser = await this.userRepository.updateOne(
+            {
+                _id: user._id
+            },
+            {
+                $set: {
+                    'twoFactorAuth.activated': false,
+                    'twoFactorAuth.secret': null,
+                    'twoFactorAuth.recoveryCodes': []
+                }
+            }
+        )
+
+        if (updatedUser.modifiedCount === 0) {
+            throw new ApplicationException(400, 'Cannot reset 2FA')
+        }
+
+        // Token generation
+        const tokenPayload: TJwtPayload = {
+            userId: String(user._id),
+            stage: 'password'
+        }
+
+        const accessToken = singJWT(tokenPayload, envConfig.ACCESS_TOKEN_SECRET, generateMinutesSeconds(5))
+
+        return serviceSuccess('2FA reset success', {
+            userId: String(user._id),
+            accessToken
         })
     }
 }
