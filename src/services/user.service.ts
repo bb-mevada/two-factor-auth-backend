@@ -93,7 +93,6 @@ export default class UserService implements IUserService {
 
         // Properties
         const secret = totp.secret.base32
-        const recoveryCodes = await generateRecoveryCodes(10)
 
         // Update user
         const updatedUser = await this.userRepository.updateOne(
@@ -102,13 +101,7 @@ export default class UserService implements IUserService {
             },
             {
                 $set: {
-                    'twoFactorAuth.secret': secret,
-                    'twoFactorAuth.recoveryCodes': recoveryCodes.hashed.map((code) => {
-                        return {
-                            code,
-                            used: false
-                        }
-                    })
+                    'twoFactorAuth.secret': secret
                 }
             }
         )
@@ -118,8 +111,7 @@ export default class UserService implements IUserService {
         }
 
         return serviceSuccess('Activation loaded', {
-            qrDataUrl,
-            recoveryCodes: recoveryCodes.plainText
+            qrDataUrl
         })
     }
 
@@ -197,15 +189,28 @@ export default class UserService implements IUserService {
             throw new ApplicationException(400, 'Verification failed')
         }
 
+        let recoveryCodes: Record<'plainText' | 'hashed', string[]> = {
+            hashed: [],
+            plainText: []
+        }
+
         const is2FAActivated = user.twoFactorAuth.activated
         if (!is2FAActivated) {
+            recoveryCodes = await generateRecoveryCodes(10)
+
             const updatedUser = await this.userRepository.updateOne(
                 {
                     _id: user._id
                 },
                 {
                     $set: {
-                        'twoFactorAuth.activated': true
+                        'twoFactorAuth.activated': true,
+                        'twoFactorAuth.recoveryCodes': recoveryCodes.hashed.map((code) => {
+                            return {
+                                code,
+                                used: false
+                            }
+                        })
                     }
                 }
             )
@@ -225,7 +230,8 @@ export default class UserService implements IUserService {
 
         return serviceSuccess('Logged in', {
             userId: String(user._id),
-            accessToken
+            accessToken,
+            recoveryCodes: recoveryCodes.plainText
         })
     }
 
