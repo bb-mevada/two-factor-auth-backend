@@ -14,3 +14,7 @@ export const loginUserValidator = z.object({
 export const verify2FAValidator = z.object({
     totp: z.string().length(6)
 })
+
+export const recover2FAValidator = z.object({
+    recoveryCode: z.string().length(10)
+})

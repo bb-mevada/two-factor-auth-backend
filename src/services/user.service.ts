@@ -123,6 +123,69 @@ export default class UserService implements IUserService {
         })
     }
 
+    recover2FA = async (user: IUserRequestData['recover2FA']['user'], payload: IUserRequestData['recover2FA']['body']) => {
+        const is2FAActivated = user.twoFactorAuth.activated
+        if (!is2FAActivated) {
+            throw new ApplicationException(400, 'Recovery failed')
+        }
+
+        const nonUsedRecoveryCodes = user.twoFactorAuth.recoveryCodes.filter((rc) => !rc.used)
+
+        let validRCCode = null
+        for (const rc of nonUsedRecoveryCodes) {
+            const isValidRC = await compareValue(payload.recoveryCode, rc.code)
+
+            if (isValidRC) {
+                validRCCode = rc.code
+                break
+            }
+        }
+
+        if (!validRCCode) {
+            throw new ApplicationException(400, 'Recovery failed')
+        }
+
+        // Mark recovery code as used
+        const updatedRecoveryCodes = user.twoFactorAuth.recoveryCodes.map((rc) => {
+            if (rc.code === validRCCode) {
+                return {
+                    code: rc.code,
+                    used: true
+                }
+            }
+
+            return rc
+        })
+
+        const updatedUser = await this.userRepository.updateOne(
+            {
+                _id: user._id
+            },
+            {
+                $set: {
+                    'twoFactorAuth.recoveryCodes': updatedRecoveryCodes
+                }
+            }
+        )
+
+        if (updatedUser.modifiedCount === 0) {
+            throw new ApplicationException(400, 'Recovery failed')
+        }
+
+        // Token generation
+        const tokenPayload: TJwtPayload = {
+            userId: String(user._id),
+            stage: '2fa'
+        }
+
+        const accessToken = singJWT(tokenPayload, envConfig.ACCESS_TOKEN_SECRET, generateDaysSeconds(1))
+
+        return serviceSuccess('Logged in using recovery code', {
+            userId: String(user._id),
+            accessToken
+        })
+    }
+
     verify2FA = async (user: IUserRequestData['verify2FA']['user'], payload: IUserRequestData['verify2FA']['body']) => {
         console.log(user.twoFactorAuth)
         const totp = generateTOTP(user.email, user.twoFactorAuth.secret!)

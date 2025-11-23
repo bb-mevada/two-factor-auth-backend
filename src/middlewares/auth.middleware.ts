@@ -29,7 +29,10 @@ const authMiddleware =
             }
 
             if (isAuthenticated) {
-                const user = await params.repositories.userRepository.findOne({ _id: jwtPayload.userId }, '+twoFactorAuth.secret')
+                const user = await params.repositories.userRepository.findOne(
+                    { _id: jwtPayload.userId },
+                    '+twoFactorAuth.secret +twoFactorAuth.recoveryCodes'
+                )
                 if (user) {
                     req.user = user
                     res.setHeader('X-Auth-Stage', jwtPayload.stage)
